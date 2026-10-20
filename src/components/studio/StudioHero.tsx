@@ -43,6 +43,7 @@ export function StudioHero() {
   });
   const [preferMode, setPreferMode] = useState<ConnectionMode | "auto">("auto");
   const [server, setServer] = useState<ServerConfig | null>(null);
+  const [showCaptions, setShowCaptions] = useState(true);
 
   // scripted preview state
   const [pvTranscript, setPvTranscript] = useState<TranscriptEntry[]>([]);
@@ -158,6 +159,7 @@ export function StudioHero() {
   const isLive = mode === "live";
   const isPreview = mode === "preview";
   const transcript = isLive ? live.transcript : pvTranscript;
+  const captionEntries = transcript.slice(-2);
   const events = isLive ? live.events : pvEvents;
   const speaking = isLive ? live.speaking : pvSpeaking;
   const videoLive = isLive && live.mode === "vertex-video" && live.status === "live";
@@ -165,26 +167,26 @@ export function StudioHero() {
 
   return (
     <section id="studio" className="ambient-canvas scroll-mt-16">
-      <div className="mx-auto max-w-[1200px] px-[var(--gutter)] pb-16 pt-14 sm:pt-20">
-        {/* hero copy */}
-        <div className="max-w-3xl">
+      <div className="mx-auto max-w-[1280px] px-[var(--gutter)] pb-12 pt-7 sm:pt-10">
+        {/* hero copy — full width */}
+        <div className="w-full">
           <span className="pill bg-white text-navy shadow-[var(--shadow-card)]">
             <Dot size={7} className="text-ok ax-live-dot" />
             Powered by Gemini 3.8 Live Avatar
           </span>
-          <h1 className="mt-5 text-[44px] font-extrabold leading-[1.05] tracking-tight text-ink sm:text-[60px]">
+          <h1 className="mt-3.5 text-[34px] font-extrabold leading-[1.04] tracking-tight text-ink sm:text-[50px]">
             Hello! Meet your{" "}
             <span className="text-navy">AI Video Specialist</span>
           </h1>
-          <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-muted">
-            Real two-way video consultations with Apollo HealthAxis specialists.
-            They see what you show, speak face-to-face in real time, and act
-            through your hospital systems — built by healthcare experts.
+          <p className="mt-3 text-[15.5px] leading-relaxed text-muted sm:text-[17px]">
+            Real two-way video consultations with Apollo HealthAxis specialists —
+            they see what you show, speak face-to-face in real time, and act
+            through your hospital systems.
           </p>
         </div>
 
         {/* specialist selector */}
-        <div className="mt-8 flex flex-wrap items-center gap-3">
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           {PERSONA_ORDER.map((id) => {
             const sp = PERSONAS[id];
             const active = id === persona;
@@ -226,11 +228,11 @@ export function StudioHero() {
           </button>
         </div>
 
-        {/* studio grid */}
-        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        {/* studio — full-width video */}
+        <div className="mt-5">
           {/* viewport */}
           <div className="relative overflow-hidden rounded-3xl border border-line bg-[#0b1620] shadow-[var(--shadow-float)]">
-            <div className="relative aspect-[4/3] w-full sm:aspect-[16/11]">
+            <div className="relative aspect-[16/11] w-full sm:aspect-[16/9]">
               {/* real avatar video */}
               <video
                 ref={avatarVideoRef}
@@ -252,6 +254,31 @@ export function StudioHero() {
                 </span>
                 <StatusChip isLive={isLive} isPreview={isPreview} status={live.status} mode={live.mode} />
               </div>
+
+              {/* caption overlay — YouTube CC style */}
+              {showCaptions && captionEntries.length > 0 && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4 sm:bottom-5">
+                  <div className="flex max-w-2xl flex-col items-center gap-1">
+                    {captionEntries.map((e, i) => (
+                      <p
+                        key={e.id}
+                        className={`rounded-md bg-black/70 px-3 py-1.5 text-center text-[13.5px] font-medium leading-snug text-white backdrop-blur-sm sm:text-[15px] ${
+                          i < captionEntries.length - 1 ? "opacity-55" : "opacity-100"
+                        }`}
+                      >
+                        <span
+                          className={`mr-1.5 font-bold ${e.role === "patient" ? "text-teal" : "text-accent"}`}
+                        >
+                          {e.role === "patient"
+                            ? "You"
+                            : p.name.replace(/^(Dr\.|Dt\.)\s*/, "")}
+                        </span>
+                        {e.text}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* self view PiP */}
               {isLive && live.selfStream && (
@@ -314,6 +341,7 @@ export function StudioHero() {
                       off={<VideoOff size={18} />}
                       muted={live.camMuted}
                     />
+                    <CcToggle on={showCaptions} onClick={() => setShowCaptions((v) => !v)} />
                   </div>
                   <MicMeter level={live.micLevel} muted={live.micMuted} />
                   <button
@@ -338,15 +366,18 @@ export function StudioHero() {
                   >
                     <Play size={15} /> {isPreview ? "Playing preview…" : "Scripted preview"}
                   </button>
+                  <div className="ml-auto">
+                    <CcToggle on={showCaptions} onClick={() => setShowCaptions((v) => !v)} />
+                  </div>
                 </>
               )}
             </div>
           </div>
 
-          {/* right column: transcript + events */}
-          <div className="flex min-h-0 flex-col gap-5">
-            <Transcript entries={transcript} personaName={p.name} speaking={speaking} />
+          {/* below video: clinical events + full transcript history */}
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <EventTimeline events={events} />
+            <Transcript entries={transcript} personaName={p.name} speaking={speaking} />
           </div>
         </div>
 
@@ -507,6 +538,23 @@ function CtrlButton({
       aria-pressed={!active}
     >
       {muted ? off : on}
+    </button>
+  );
+}
+
+function CcToggle({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={on}
+      title={on ? "Hide captions" : "Show captions"}
+      className={`flex h-11 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-bold transition ${
+        on ? "bg-white/20 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
+      }`}
+    >
+      <span className="rounded border border-current px-1 text-[10px] leading-tight">
+        CC
+      </span>
     </button>
   );
 }
