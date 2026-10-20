@@ -1,26 +1,149 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ *
+ * Apollo HealthAxis design system
+ * Palette + type scale lifted 1:1 from the reference voice studio.
+ * ------------------------------------------------------------------ */
+@theme {
+  --color-bg: #ffffff;
+  --color-bg-soft: #f8fafc;
+
+  --color-ink: #0f172a;
+  --color-ink-2: #334155;
+  --color-muted: #64748b;
+
+  --color-line: #e2e8f0;
+  --color-line-2: #cbd5e1;
+
+  --color-navy: #1d6882;
+  --color-navy-700: #154e62;
+  --color-navy-50: #eaf5f9;
+
+  --color-primary: #2582a1;
+  --color-cyan: #0891b2;
+  --color-cyan-50: #e6f4f9;
+  --color-teal: #64b1cf;
+
+  --color-accent: #d97706;
+  --color-accent-700: #b45309;
+
+  --color-ok: #059669;
+  --color-alert: #ef4444;
+  --color-warn: #d97706;
+
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px #0f172a0a, 0 12px 32px #1d68821a;
+  --shadow-float: 0 8px 24px #0f172a14, 0 24px 64px #1d682826;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --gutter: 24px;
+  --maxw: 1200px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ambient clinical canvas backdrop behind the hero */
+.ambient-canvas {
+  background:
+    radial-gradient(60rem 36rem at 78% -8%, #e6f4f9 0%, rgba(230, 244, 249, 0) 60%),
+    radial-gradient(44rem 30rem at 6% 8%, #eaf5f9 0%, rgba(234, 245, 249, 0) 55%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.hairline {
+  border: 1px solid var(--color-line);
+}
+
+.wordmark-serif {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Marquee-free pill badges */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Live indicator pulse */
+@keyframes ax-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.72);
+  }
+}
+.ax-live-dot {
+  animation: ax-pulse 1.4s ease-in-out infinite;
+}
+
+/* Audio-reactive idle portrait ring */
+@keyframes ax-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.9;
+  }
+}
+.ax-breathe {
+  animation: ax-breathe 3.4s ease-in-out infinite;
+}
+
+/* Event row slide-in */
+@keyframes ax-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ax-slide-in {
+  animation: ax-slide-in 0.35s ease-out both;
+}
+
+/* thin scrollbar for transcript / events */
+.ax-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-2) transparent;
+}
+.ax-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.ax-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-line-2);
+  border-radius: 999px;
 }
