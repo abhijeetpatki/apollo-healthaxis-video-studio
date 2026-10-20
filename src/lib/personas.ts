@@ -13,7 +13,7 @@
  * picker, so a mismatch should never hard-fail a demo.
  */
 
-export type PersonaId = "counsellor" | "dietician";
+export type PersonaId = "counsellor" | "dietician" | "physiotherapist";
 
 export interface Persona {
   id: PersonaId;
@@ -25,7 +25,7 @@ export interface Persona {
   /** Prebuilt voice (prebuiltVoiceConfig.voiceName). */
   voiceName: string;
   gender: "male" | "female";
-  accent: "navy" | "accent";
+  accent: "navy" | "accent" | "cyan";
   tagline: string;
   /** Short bullet points shown under the specialist card. */
   specialties: string[];
@@ -113,6 +113,42 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       SAFETY_FOOTER,
     portrait: { from: "#d97706", to: "#b45309" },
   },
+  physiotherapist: {
+    id: "physiotherapist",
+    name: "Dr. Kabir Rao",
+    role: "Senior Physiotherapist & Sports Rehabilitation Specialist",
+    shortRole: "Physiotherapy",
+    avatarName: "Leo",
+    voiceName: "Charon",
+    gender: "male",
+    accent: "cyan",
+    tagline: "Show your movement — get guided rehab and posture correction live.",
+    specialties: [
+      "Posture & gait assessment",
+      "Guided rehab & mobility drills",
+      "Range-of-motion checks on camera",
+      "Sports & post-op recovery",
+    ],
+    greeting:
+      "Hi, I'm Dr. Kabir Rao, physiotherapist at Apollo HealthAxis. Let's get you moving better. When you're ready, show me the area that's bothering you, or stand back so I can watch how you move.",
+    suggestions: [
+      "My lower back hurts when I sit too long.",
+      "Can you check my posture on camera?",
+      "Guide me through a knee rehab exercise.",
+    ],
+    systemInstruction:
+      `You are Dr. Kabir Rao, a senior physiotherapist and sports rehabilitation specialist at Apollo HealthAxis, on a real-time two-way video consultation. ` +
+      `Actively use the patient's camera: ask them to show the affected area, demonstrate a movement, or step back so you can observe posture, gait and range of motion, and respond to what you actually see. ` +
+      `Assess movement quality, guide the patient through safe exercises one step at a time, correct form in real time, and flag anything that needs in-person imaging or a doctor. ` +
+      `Favour clear, encouraging coaching cues and realistic home programs. Respect pain limits — never push through sharp pain — and stop and escalate on red flags (numbness, loss of function, severe or worsening pain). ` +
+      `End with a short home-exercise plan and mention it can be logged to the record and sent on WhatsApp.` +
+      SAFETY_FOOTER,
+    portrait: { from: "#0891b2", to: "#0e7490" },
+  },
 };
 
-export const PERSONA_ORDER: PersonaId[] = ["counsellor", "dietician"];
+export const PERSONA_ORDER: PersonaId[] = [
+  "counsellor",
+  "dietician",
+  "physiotherapist",
+];

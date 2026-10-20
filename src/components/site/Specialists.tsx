@@ -1,5 +1,15 @@
 import { PERSONA_ORDER, PERSONAS } from "@/lib/personas";
-import { Check, Heart, Leaf } from "@/components/icons";
+import { Check, Heart, Leaf, Activity } from "@/components/icons";
+
+const ACCENT: Record<string, { pill: string; link: string; chip: string }> = {
+  navy: { pill: "bg-navy-50 text-navy", link: "text-navy", chip: "bg-navy-50 text-navy" },
+  accent: {
+    pill: "bg-[#fdf2e2] text-accent-700",
+    link: "text-accent-700",
+    chip: "bg-[#fdf2e2] text-accent-700",
+  },
+  cyan: { pill: "bg-cyan-50 text-cyan", link: "text-cyan", chip: "bg-cyan-50 text-cyan" },
+};
 
 export function Specialists() {
   return (
@@ -17,11 +27,12 @@ export function Specialists() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {PERSONA_ORDER.map((id) => {
             const p = PERSONAS[id];
-            const isNavy = p.accent === "navy";
-            const Icon = id === "counsellor" ? Heart : Leaf;
+            const ac = ACCENT[p.accent];
+            const Icon =
+              id === "counsellor" ? Heart : id === "dietician" ? Leaf : Activity;
             return (
               <div
                 key={id}
@@ -44,9 +55,7 @@ export function Specialists() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`pill ${isNavy ? "bg-navy-50 text-navy" : "bg-[#fdf2e2] text-accent-700"}`}
-                      >
+                      <span className={`pill ${ac.pill}`}>
                         {p.gender === "male" ? "Male avatar" : "Female avatar"} ·{" "}
                         {p.avatarName}
                       </span>
@@ -71,7 +80,7 @@ export function Specialists() {
                       className="flex items-center gap-2 text-[13.5px] text-ink-2"
                     >
                       <span
-                        className={`flex h-5 w-5 items-center justify-center rounded-full ${isNavy ? "bg-navy-50 text-navy" : "bg-[#fdf2e2] text-accent-700"}`}
+                        className={`flex h-5 w-5 items-center justify-center rounded-full ${ac.chip}`}
                       >
                         <Check size={13} />
                       </span>
@@ -86,7 +95,7 @@ export function Specialists() {
                   </span>
                   <a
                     href="#studio"
-                    className={`text-[13.5px] font-semibold ${isNavy ? "text-navy" : "text-accent-700"} hover:underline`}
+                    className={`text-[13.5px] font-semibold ${ac.link} hover:underline`}
                   >
                     Start a session →
                   </a>

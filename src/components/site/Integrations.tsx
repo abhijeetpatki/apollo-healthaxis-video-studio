@@ -18,8 +18,8 @@ export function Integrations() {
           </h2>
           <p className="mt-4 text-[16px] leading-relaxed text-muted">
             The video avatar isn&apos;t a silo. Patient camera and mic flow into
-            Gemini 3.8 Live, and every clinical action flows straight back into
-            your hospital stack.
+            the Apollo Live Avatar, and every clinical action flows straight back
+            into your hospital stack.
           </p>
         </div>
 
@@ -36,7 +36,7 @@ export function Integrations() {
             {/* brain */}
             <PipeCard
               icon={Sparkle}
-              title="Gemini 3.8 Live Avatar"
+              title="Apollo Live Avatar"
               desc="Two-way video · VIDEO output"
               tone="accent"
               highlight

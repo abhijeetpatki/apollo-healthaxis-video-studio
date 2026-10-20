@@ -74,6 +74,11 @@ export const Leaf = ({ size, ...p }: P) => (
     <path d="M9 15c2-3 5-5 9-6" />
   </svg>
 );
+export const Activity = ({ size, ...p }: P) => (
+  <svg {...base(size, p)}>
+    <path d="M3 12h3.5l2-6 4 13 2.5-7H21" />
+  </svg>
+);
 export const ArrowRight = ({ size, ...p }: P) => (
   <svg {...base(size, p)}>
     <path d="M5 12h14M13 6l6 6-6 6" />

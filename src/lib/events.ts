@@ -123,6 +123,26 @@ export const EVENT_RULES: EventRule[] = [
     personas: ["dietician"],
   },
   {
+    match: /\b(posture|gait|stand|walk|movement|move|range of motion|bend)\b/i,
+    event: {
+      id: "movement-assessed",
+      label: "Movement Assessed on Camera",
+      detail: "Posture / range-of-motion reviewed from camera",
+      channel: "EHR",
+    },
+    personas: ["physiotherapist"],
+  },
+  {
+    match: /\b(exercise|rehab|stretch|strengthen|mobility|reps|sets|hold)\b/i,
+    event: {
+      id: "rehab-plan",
+      label: "Rehab Plan Updated",
+      detail: "Home exercise program generated for the patient",
+      channel: "EHR",
+    },
+    personas: ["physiotherapist"],
+  },
+  {
     match: /\b(escalat|psychiatrist|doctor|clinician|emergency|urgent|crisis)\b/i,
     event: {
       id: "care-hub",

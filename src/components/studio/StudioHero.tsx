@@ -23,17 +23,18 @@ import {
   Gear,
   Heart,
   Leaf,
+  Activity,
+  Chat,
   Dot,
 } from "@/components/icons";
 
 type Mode = "idle" | "preview" | "live";
-const TONE_CLASS: Record<string, string> = {
-  navy: "bg-navy-50 text-navy",
-  accent: "bg-[#fdf2e2] text-accent-700",
-  cyan: "bg-cyan-50 text-cyan",
-  ok: "bg-ok/12 text-ok",
-};
+type SidePanel = "none" | "transcript" | "events";
 
+/** Icon for a given specialist. */
+function iconFor(id: PersonaId) {
+  return id === "counsellor" ? Heart : id === "dietician" ? Leaf : Activity;
+}
 export function StudioHero() {
   const [persona, setPersona] = useState<PersonaId>("counsellor");
   const [mode, setMode] = useState<Mode>("idle");
@@ -44,6 +45,7 @@ export function StudioHero() {
   const [preferMode, setPreferMode] = useState<ConnectionMode | "auto">("auto");
   const [server, setServer] = useState<ServerConfig | null>(null);
   const [showCaptions, setShowCaptions] = useState(true);
+  const [sidePanel, setSidePanel] = useState<SidePanel>("none");
 
   // scripted preview state
   const [pvTranscript, setPvTranscript] = useState<TranscriptEntry[]>([]);
@@ -163,18 +165,15 @@ export function StudioHero() {
   const events = isLive ? live.events : pvEvents;
   const speaking = isLive ? live.speaking : pvSpeaking;
   const videoLive = isLive && live.mode === "vertex-video" && live.status === "live";
-  const PersonaIcon = persona === "counsellor" ? Heart : Leaf;
+  const PersonaIcon = iconFor(persona);
+  const hasContent = transcript.length > 0 || events.length > 0;
 
   return (
     <section id="studio" className="ambient-canvas scroll-mt-16">
       <div className="mx-auto max-w-[1280px] px-[var(--gutter)] pb-12 pt-7 sm:pt-10">
         {/* hero copy — full width */}
         <div className="w-full">
-          <span className="pill bg-white text-navy shadow-[var(--shadow-card)]">
-            <Dot size={7} className="text-ok ax-live-dot" />
-            Powered by Gemini 3.8 Live Avatar
-          </span>
-          <h1 className="mt-3.5 text-[34px] font-extrabold leading-[1.04] tracking-tight text-ink sm:text-[50px]">
+          <h1 className="text-[34px] font-extrabold leading-[1.04] tracking-tight text-ink sm:text-[50px]">
             Hello! Meet your{" "}
             <span className="text-navy">AI Video Specialist</span>
           </h1>
@@ -190,7 +189,7 @@ export function StudioHero() {
           {PERSONA_ORDER.map((id) => {
             const sp = PERSONAS[id];
             const active = id === persona;
-            const Icon = id === "counsellor" ? Heart : Leaf;
+            const Icon = iconFor(id);
             return (
               <button
                 key={id}
@@ -247,12 +246,32 @@ export function StudioHero() {
               )}
 
               {/* top status bar */}
-              <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
+              <div className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-3 sm:p-4">
                 <span className="flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-[12px] font-semibold text-white backdrop-blur">
                   <PersonaIcon size={14} />
                   {p.name}
                 </span>
-                <StatusChip isLive={isLive} isPreview={isPreview} status={live.status} mode={live.mode} />
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <PanelTab
+                    label="Transcript"
+                    icon={<Chat size={13} />}
+                    active={sidePanel === "transcript"}
+                    disabled={!hasContent}
+                    onClick={() =>
+                      setSidePanel((s) => (s === "transcript" ? "none" : "transcript"))
+                    }
+                  />
+                  <PanelTab
+                    label="Events"
+                    icon={<Sparkle size={13} />}
+                    active={sidePanel === "events"}
+                    disabled={!hasContent}
+                    onClick={() =>
+                      setSidePanel((s) => (s === "events" ? "none" : "events"))
+                    }
+                  />
+                  <StatusChip isLive={isLive} isPreview={isPreview} status={live.status} mode={live.mode} />
+                </div>
               </div>
 
               {/* caption overlay — YouTube CC style */}
@@ -282,7 +301,11 @@ export function StudioHero() {
 
               {/* self view PiP */}
               {isLive && live.selfStream && (
-                <div className="absolute bottom-4 right-4 h-28 w-20 overflow-hidden rounded-xl border-2 border-white/70 bg-black shadow-lg sm:h-32 sm:w-24">
+                <div
+                  className={`absolute bottom-4 z-20 h-28 w-20 overflow-hidden rounded-xl border-2 border-white/70 bg-black shadow-lg transition-all sm:h-32 sm:w-24 ${
+                    sidePanel !== "none" ? "left-4" : "right-4"
+                  }`}
+                >
                   <video
                     ref={selfVideoRef}
                     playsInline
@@ -320,6 +343,16 @@ export function StudioHero() {
                   </div>
                 </div>
               )}
+
+              {/* in-frame translucent side panel */}
+              <SidePanelOverlay
+                which={sidePanel}
+                onClose={() => setSidePanel("none")}
+                transcript={transcript}
+                events={events}
+                personaName={p.name}
+                speaking={speaking}
+              />
             </div>
 
             {/* control bar */}
@@ -372,12 +405,6 @@ export function StudioHero() {
                 </>
               )}
             </div>
-          </div>
-
-          {/* below video: clinical events + full transcript history */}
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <EventTimeline events={events} />
-            <Transcript entries={transcript} personaName={p.name} speaking={speaking} />
           </div>
         </div>
 
@@ -574,88 +601,139 @@ function MicMeter({ level, muted }: { level: number; muted: boolean }) {
   );
 }
 
-function Transcript({
-  entries,
+function PanelTab({
+  label,
+  icon,
+  active,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={active}
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11.5px] font-semibold backdrop-blur transition disabled:cursor-not-allowed disabled:opacity-40 ${
+        active ? "bg-white text-ink" : "bg-black/40 text-white hover:bg-black/55"
+      }`}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
+}
+
+const TONE_DARK: Record<string, string> = {
+  navy: "bg-navy/40 text-white",
+  accent: "bg-accent/40 text-white",
+  cyan: "bg-cyan/40 text-white",
+  ok: "bg-ok/40 text-white",
+};
+
+function SidePanelOverlay({
+  which,
+  onClose,
+  transcript,
+  events,
   personaName,
   speaking,
 }: {
-  entries: TranscriptEntry[];
+  which: SidePanel;
+  onClose: () => void;
+  transcript: TranscriptEntry[];
+  events: TimelineEvent[];
   personaName: string;
   speaking: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [entries, speaking]);
+    if (scrollRef.current)
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [transcript, events, speaking, which]);
+  const open = which !== "none";
   return (
-    <div className="flex min-h-[220px] flex-1 flex-col rounded-2xl border border-line bg-white shadow-[var(--shadow-card)]">
-      <div className="flex items-center justify-between border-b border-line px-4 py-3">
-        <h3 className="text-[13.5px] font-bold text-ink">Live transcript</h3>
-        <span className="pill bg-navy-50 text-navy">Real-time</span>
+    <div
+      className={`absolute inset-y-0 right-0 z-20 flex w-[86%] max-w-[320px] flex-col border-l border-white/15 bg-black/45 backdrop-blur-md transition-transform duration-300 ${
+        open ? "translate-x-0" : "pointer-events-none translate-x-full"
+      }`}
+      aria-hidden={!open}
+    >
+      <div className="flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-14">
+        <h3 className="text-[13px] font-bold text-white">
+          {which === "events" ? "Clinical events" : "Live transcript"}
+        </h3>
+        <button
+          onClick={onClose}
+          className="rounded-md px-2 py-1 text-[12px] font-semibold text-white/70 hover:bg-white/10"
+        >
+          Close
+        </button>
       </div>
-      <div ref={scrollRef} className="ax-scroll flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {entries.length === 0 && (
-          <p className="py-8 text-center text-[13px] text-muted">
-            The conversation will appear here as it happens.
-          </p>
-        )}
-        {entries.map((e) => (
-          <div
-            key={e.id}
-            className={`ax-slide-in flex flex-col ${e.role === "patient" ? "items-end" : "items-start"}`}
-          >
-            <span className="mb-1 text-[10.5px] font-semibold uppercase tracking-wide text-muted">
-              {e.role === "patient" ? "You" : personaName}
-            </span>
-            <span
-              className={`max-w-[90%] rounded-2xl px-3.5 py-2 text-[13.5px] leading-relaxed ${
-                e.role === "patient"
-                  ? "bg-navy text-white"
-                  : "bg-bg-soft text-ink-2"
-              } ${e.final ? "" : "opacity-80"}`}
-            >
-              {e.text}
-            </span>
-          </div>
-        ))}
-        {speaking && (
-          <div className="flex items-center gap-1.5 pl-1 text-muted">
-            <span className="h-2 w-2 animate-bounce rounded-full bg-navy [animation-delay:-0.2s]" />
-            <span className="h-2 w-2 animate-bounce rounded-full bg-navy [animation-delay:-0.1s]" />
-            <span className="h-2 w-2 animate-bounce rounded-full bg-navy" />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function EventTimeline({ events }: { events: TimelineEvent[] }) {
-  return (
-    <div className="rounded-2xl border border-line bg-white shadow-[var(--shadow-card)]">
-      <div className="flex items-center justify-between border-b border-line px-4 py-3">
-        <h3 className="text-[13.5px] font-bold text-ink">Clinical events</h3>
-        <Sparkle size={16} className="text-accent" />
-      </div>
-      <div className="ax-scroll max-h-[180px] space-y-2 overflow-y-auto px-4 py-3">
-        {events.length === 0 && (
-          <p className="py-4 text-center text-[12.5px] text-muted">
-            Tool-calls to HIS, EHR, Care Hub &amp; WhatsApp will fire here.
-          </p>
-        )}
-        {events.map((ev) => (
-          <div key={ev.key} className="ax-slide-in flex items-center gap-3">
-            <span className={`pill ${TONE_CLASS[ev.tone] ?? TONE_CLASS.navy}`}>
-              {ev.channelName}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-ink">
-                {ev.label}
+      <div ref={scrollRef} className="ax-scroll flex-1 overflow-y-auto px-4 py-3">
+        {which === "transcript" ? (
+          <div className="space-y-3">
+            {transcript.length === 0 && (
+              <p className="py-8 text-center text-[12.5px] text-white/50">
+                The conversation will appear here as it happens.
               </p>
-              <p className="truncate text-[11.5px] text-muted">{ev.detail}</p>
-            </div>
+            )}
+            {transcript.map((e) => (
+              <div
+                key={e.id}
+                className={`ax-slide-in flex flex-col ${e.role === "patient" ? "items-end" : "items-start"}`}
+              >
+                <span className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/45">
+                  {e.role === "patient" ? "You" : personaName}
+                </span>
+                <span
+                  className={`max-w-[92%] rounded-2xl px-3 py-1.5 text-[12.5px] leading-relaxed ${
+                    e.role === "patient"
+                      ? "bg-navy text-white"
+                      : "bg-white/12 text-white/90"
+                  } ${e.final ? "" : "opacity-80"}`}
+                >
+                  {e.text}
+                </span>
+              </div>
+            ))}
+            {speaking && (
+              <div className="flex items-center gap-1.5 pl-1">
+                <span className="h-2 w-2 animate-bounce rounded-full bg-white/70 [animation-delay:-0.2s]" />
+                <span className="h-2 w-2 animate-bounce rounded-full bg-white/70 [animation-delay:-0.1s]" />
+                <span className="h-2 w-2 animate-bounce rounded-full bg-white/70" />
+              </div>
+            )}
           </div>
-        ))}
+        ) : (
+          <div className="space-y-2.5">
+            {events.length === 0 && (
+              <p className="py-8 text-center text-[12.5px] text-white/50">
+                Tool-calls to HIS, EHR, Care Hub &amp; WhatsApp will fire here.
+              </p>
+            )}
+            {events.map((ev) => (
+              <div key={ev.key} className="ax-slide-in flex items-center gap-2.5">
+                <span className={`pill ${TONE_DARK[ev.tone] ?? TONE_DARK.navy}`}>
+                  {ev.channelName}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-[12.5px] font-semibold text-white">
+                    {ev.label}
+                  </p>
+                  <p className="truncate text-[11px] text-white/55">
+                    {ev.detail}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

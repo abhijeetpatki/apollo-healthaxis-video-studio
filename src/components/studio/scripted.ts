@@ -113,4 +113,48 @@ export const SCRIPTS: Record<PersonaId, ScriptLine[]> = {
       },
     },
   ],
+  physiotherapist: [
+    {
+      role: "specialist",
+      text: "Hi, I'm Dr. Kabir Rao, physiotherapist at Apollo HealthAxis. Tell me what's bothering you, and show me the area if you can.",
+    },
+    {
+      role: "patient",
+      text: "My lower back aches when I sit for a long time at work.",
+    },
+    {
+      role: "specialist",
+      text: "Thanks. Could you stand up and slowly bend forward for me? I'll watch how your back moves.",
+      event: {
+        id: "movement-assessed",
+        label: "Movement Assessed on Camera",
+        detail: "Posture / range-of-motion reviewed from camera",
+        channel: "EHR",
+      },
+    },
+    {
+      role: "patient",
+      text: "Okay, here you go... it feels tight on the way back up.",
+    },
+    {
+      role: "specialist",
+      text: "I can see the tightness. Let's start with pelvic tilts and a cat-cow stretch — two sets of ten, twice a day. I'll build your plan.",
+      event: {
+        id: "rehab-plan",
+        label: "Rehab Plan Updated",
+        detail: "Home exercise program generated for the patient",
+        channel: "EHR",
+      },
+    },
+    {
+      role: "specialist",
+      text: "Your home exercise program and a short posture guide are on their way to WhatsApp. Let's reassess your movement on Friday.",
+      event: {
+        id: "whatsapp",
+        label: "WhatsApp Follow-up Sent",
+        detail: "Visit summary & next steps delivered to patient",
+        channel: "WhatsApp",
+      },
+    },
+  ],
 };
