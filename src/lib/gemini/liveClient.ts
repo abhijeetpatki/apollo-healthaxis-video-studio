@@ -122,9 +122,11 @@ export class LiveClient {
   }
 
   sendAudio(base64Pcm16k: string) {
+    // Vertex realtimeInput uses dedicated `audio`/`video` fields; `mediaChunks`
+    // is audio-only / legacy and rejects image frames with close code 1007.
     this.send({
       realtimeInput: {
-        mediaChunks: [{ mimeType: "audio/pcm;rate=16000", data: base64Pcm16k }],
+        audio: { mimeType: "audio/pcm;rate=16000", data: base64Pcm16k },
       },
     });
   }
@@ -132,7 +134,7 @@ export class LiveClient {
   sendVideoFrame(base64Jpeg: string) {
     this.send({
       realtimeInput: {
-        mediaChunks: [{ mimeType: "image/jpeg", data: base64Jpeg }],
+        video: { mimeType: "image/jpeg", data: base64Jpeg },
       },
     });
   }
