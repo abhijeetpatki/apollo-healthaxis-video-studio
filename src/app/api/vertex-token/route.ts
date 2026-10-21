@@ -5,6 +5,7 @@ import {
   GEMINI_MODEL,
   vertexModelPath,
 } from "@/lib/gemini/constants";
+import { ADMIN_COOKIE, adminConfigured, verifyToken } from "@/lib/admin";
 const SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
 interface Body {
@@ -36,6 +37,23 @@ export async function POST(req: NextRequest) {
     body = (await req.json()) as Body;
   } catch {
     body = {};
+  }
+
+  // Guard the SERVER's own credentials behind the admin gate. Requests that
+  // bring their own credentials (service account or access token) are a guest
+  // using their own billing and are always allowed.
+  const usesServerCreds = !body.serviceAccountJson && !body.accessToken;
+  if (usesServerCreds && adminConfigured()) {
+    const token = req.cookies.get(ADMIN_COOKIE)?.value;
+    if (!verifyToken(token)) {
+      return NextResponse.json(
+        {
+          error:
+            "Admin sign-in required to start a session with this studio's credentials. Sign in, or add your own credentials in the drawer.",
+        },
+        { status: 401 },
+      );
+    }
   }
 
   const location =

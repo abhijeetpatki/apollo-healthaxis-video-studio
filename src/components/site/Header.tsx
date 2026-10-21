@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ApolloLogo } from "@/components/brand/Logo";
 import { ArrowRight } from "@/components/icons";
+import { AdminButton } from "@/components/admin/AdminButton";
 
 const NAV = [
   { href: "#studio", label: "Try it live" },
@@ -29,12 +30,7 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-2.5">
-          <a
-            href="#"
-            className="hidden rounded-[10px] px-3.5 py-2 text-[14px] font-semibold text-ink-2 transition-colors hover:text-navy sm:inline-block"
-          >
-            Sign in
-          </a>
+          <AdminButton />
           <a
             href="#studio"
             className="inline-flex items-center gap-1.5 rounded-[10px] bg-navy px-4 py-2.5 text-[14px] font-semibold text-white shadow-[var(--shadow-card)] transition-colors hover:bg-navy-700"

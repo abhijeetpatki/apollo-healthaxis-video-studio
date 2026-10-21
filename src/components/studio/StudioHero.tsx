@@ -12,6 +12,7 @@ import type {
 } from "@/lib/gemini/types";
 import { SCRIPTS } from "./scripted";
 import { CredentialsDrawer } from "./CredentialsDrawer";
+import { useAdmin } from "@/components/admin/AdminProvider";
 import {
   Mic,
   MicOff,
@@ -26,6 +27,7 @@ import {
   Activity,
   Chat,
   Dot,
+  Shield,
 } from "@/components/icons";
 
 type Mode = "idle" | "preview" | "live";
@@ -56,8 +58,16 @@ export function StudioHero() {
   const avatarVideoRef = useRef<HTMLVideoElement>(null);
   const selfVideoRef = useRef<HTMLVideoElement>(null);
   const live = useGeminiLive(avatarVideoRef);
+  const { isAdmin, required: adminRequired } = useAdmin();
 
   const p = PERSONAS[persona];
+
+  const hasOwnCreds =
+    Boolean(credentials.vertexAccessToken) ||
+    Boolean(credentials.serviceAccountJson && credentials.vertexProject) ||
+    Boolean(credentials.geminiApiKey);
+  // Guests (not admin, no own creds) can't spend the studio's billing.
+  const gated = adminRequired && !isAdmin && !hasOwnCreds;
 
   useEffect(() => {
     fetch("/api/config")
@@ -130,6 +140,11 @@ export function StudioHero() {
   );
 
   const startLive = useCallback(async () => {
+    // Guests without their own credentials get the form, not a billed session.
+    if (gated) {
+      setDrawerOpen(true);
+      return;
+    }
     clearPreview();
     setMode("live");
     await live.start({
@@ -139,8 +154,9 @@ export function StudioHero() {
       credentials,
       server,
       preferMode: preferMode === "auto" ? undefined : preferMode,
+      allowServerCreds: isAdmin,
     });
-  }, [clearPreview, credentials, live, p.avatarName, p.voiceName, persona, preferMode, server]);
+  }, [clearPreview, credentials, gated, isAdmin, live, p.avatarName, p.voiceName, persona, preferMode, server]);
 
   const endSession = useCallback(() => {
     live.stop();
@@ -390,7 +406,15 @@ export function StudioHero() {
                     onClick={startLive}
                     className="flex items-center gap-2 rounded-full bg-navy px-5 py-2.5 text-[14px] font-semibold text-white transition hover:bg-navy-700"
                   >
-                    <Video size={17} /> Start consultation
+                    {gated ? (
+                      <>
+                        <Shield size={16} /> Sign in to start
+                      </>
+                    ) : (
+                      <>
+                        <Video size={17} /> Start consultation
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => startPreview(persona)}
@@ -407,6 +431,15 @@ export function StudioHero() {
             </div>
           </div>
         </div>
+
+        {gated && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-navy/15 bg-navy-50/60 px-4 py-2.5 text-[12.5px] text-ink-2">
+            <Shield size={15} className="text-navy" />
+            <span className="font-semibold text-navy">Admin sign-in required to start.</span>
+            Guests can watch the scripted preview, or add their own credentials
+            in “Credentials &amp; Mode” to run a session on their own account.
+          </div>
+        )}
 
         <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted">
           <span className="pill bg-white text-navy shadow-[var(--shadow-card)]">Synthetic data</span>

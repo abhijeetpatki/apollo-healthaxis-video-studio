@@ -52,6 +52,8 @@ export interface StartParams {
   credentials: ClientCredentials;
   server: ServerConfig | null;
   preferMode?: ConnectionMode;
+  /** Server-held credentials may only be used by a signed-in admin. */
+  allowServerCreds?: boolean;
 }
 
 let idCounter = 0;
@@ -170,13 +172,14 @@ export function useGeminiLive(avatarVideoRef: React.RefObject<HTMLVideoElement |
 
   const resolveMode = useCallback(
     (p: StartParams): ConnectionMode | { error: string } => {
+      const serverOk = Boolean(p.allowServerCreds);
       const vertexReady =
         Boolean(p.credentials.vertexAccessToken) ||
         Boolean(p.credentials.serviceAccountJson && p.credentials.vertexProject) ||
-        Boolean(p.server?.vertexConfigured);
+        (serverOk && Boolean(p.server?.vertexConfigured));
       const aiReady =
         Boolean(p.credentials.geminiApiKey) ||
-        Boolean(p.server?.aiStudioConfigured);
+        (serverOk && Boolean(p.server?.aiStudioConfigured));
 
       if (p.preferMode === "vertex-video" && vertexReady) return "vertex-video";
       if (p.preferMode === "aistudio-audio" && aiReady) return "aistudio-audio";
@@ -184,7 +187,7 @@ export function useGeminiLive(avatarVideoRef: React.RefObject<HTMLVideoElement |
       if (aiReady) return "aistudio-audio";
       return {
         error:
-          "No credentials configured. Open ‘Credentials & Mode’ and add a GCP project + service account (for video) or a Gemini API key (for voice + vision).",
+          "Sign in as admin to start a session, or open ‘Credentials & Mode’ and add your own GCP project + service account (video) or Gemini API key (voice + vision).",
       };
     },
     [],

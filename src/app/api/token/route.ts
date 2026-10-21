@@ -1,11 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import { ADMIN_COOKIE, adminConfigured, verifyToken } from "@/lib/admin";
 /**
  * Mints a short-lived AI Studio ephemeral token for the audio+vision fallback,
  * so the server-side GEMINI_API_KEY is never shipped to the browser.
  * The returned token is passed to the Live WebSocket as ?access_token=.
+ * Uses the server's key, so it is admin-only.
  */
-export async function POST() {
+export async function POST(req: NextRequest) {
+  if (adminConfigured() && !verifyToken(req.cookies.get(ADMIN_COOKIE)?.value)) {
+    return NextResponse.json(
+      { error: "Admin sign-in required." },
+      { status: 401 },
+    );
+  }
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
