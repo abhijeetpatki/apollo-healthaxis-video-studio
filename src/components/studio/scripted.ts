@@ -116,7 +116,7 @@ export const SCRIPTS: Record<PersonaId, ScriptLine[]> = {
   physiotherapist: [
     {
       role: "specialist",
-      text: "Hi, I'm Dr. Kabir Rao, physiotherapist at Apollo HealthAxis. Tell me what's bothering you, and show me the area if you can.",
+      text: "Hi, I'm Dr. Sneha Nair, physiotherapist at Apollo HealthAxis. Tell me what's bothering you, and show me the area if you can.",
     },
     {
       role: "patient",
