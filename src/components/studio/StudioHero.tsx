@@ -28,6 +28,7 @@ import {
   Chat,
   Dot,
   Shield,
+  Camera,
 } from "@/components/icons";
 
 type Mode = "idle" | "preview" | "live";
@@ -48,6 +49,8 @@ export function StudioHero() {
   const [server, setServer] = useState<ServerConfig | null>(null);
   const [showCaptions, setShowCaptions] = useState(true);
   const [sidePanel, setSidePanel] = useState<SidePanel>("none");
+  const [portraits, setPortraits] = useState<Partial<Record<PersonaId, string>>>({});
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // scripted preview state
   const [pvTranscript, setPvTranscript] = useState<TranscriptEntry[]>([]);
@@ -75,6 +78,53 @@ export function StudioHero() {
       .then((d: ServerConfig) => setServer(d))
       .catch(() => setServer(null));
   }, []);
+
+  // Persist uploaded specialist portraits in this browser.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("ax_portraits");
+      if (raw) setPortraits(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const onUploadPortrait = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file || !file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = typeof reader.result === "string" ? reader.result : "";
+        if (!dataUrl) return;
+        setPortraits((prev) => {
+          const next = { ...prev, [persona]: dataUrl };
+          try {
+            localStorage.setItem("ax_portraits", JSON.stringify(next));
+          } catch {
+            /* quota/full — keep in-memory only */
+          }
+          return next;
+        });
+      };
+      reader.readAsDataURL(file);
+    },
+    [persona],
+  );
+
+  const clearPortrait = useCallback(() => {
+    setPortraits((prev) => {
+      const next = { ...prev };
+      delete next[persona];
+      try {
+        localStorage.setItem("ax_portraits", JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, [persona]);
 
   // attach self-view stream
   useEffect(() => {
@@ -216,14 +266,24 @@ export function StudioHero() {
                     : "border-line bg-white/60 hover:border-navy/40"
                 }`}
               >
-                <span
-                  className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
-                  style={{
-                    background: `linear-gradient(145deg, ${sp.portrait.from}, ${sp.portrait.to})`,
-                  }}
-                >
-                  <Icon size={20} />
-                </span>
+                {portraits[id] ?? sp.portraitImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={portraits[id] ?? sp.portraitImage}
+                    alt={sp.name}
+                    className="h-10 w-10 rounded-xl object-cover"
+                    style={{ objectPosition: "50% 22%" }}
+                  />
+                ) : (
+                  <span
+                    className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
+                    style={{
+                      background: `linear-gradient(145deg, ${sp.portrait.from}, ${sp.portrait.to})`,
+                    }}
+                  >
+                    <Icon size={20} />
+                  </span>
+                )}
                 <span className="pr-1">
                   <span className="block text-[14px] font-bold text-ink">
                     {sp.shortRole}
@@ -235,12 +295,37 @@ export function StudioHero() {
               </button>
             );
           })}
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="ml-auto flex items-center gap-1.5 rounded-xl border border-line bg-white px-3.5 py-2.5 text-[13px] font-semibold text-ink-2 transition hover:border-navy/40"
-          >
-            <Gear size={16} /> Credentials &amp; Mode
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={onUploadPortrait}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              title="Use a custom face photo for this specialist"
+              className="flex items-center gap-1.5 rounded-xl border border-line bg-white px-3.5 py-2.5 text-[13px] font-semibold text-ink-2 transition hover:border-navy/40"
+            >
+              <Camera size={16} /> {portraits[persona] ? "Change photo" : "Photo"}
+            </button>
+            {portraits[persona] && (
+              <button
+                onClick={clearPortrait}
+                title="Remove uploaded photo"
+                className="rounded-xl border border-line bg-white px-3 py-2.5 text-[13px] font-semibold text-muted transition hover:text-alert"
+              >
+                Reset
+              </button>
+            )}
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-line bg-white px-3.5 py-2.5 text-[13px] font-semibold text-ink-2 transition hover:border-navy/40"
+            >
+              <Gear size={16} /> Credentials &amp; Mode
+            </button>
+          </div>
         </div>
 
         {/* studio — full-width video */}
@@ -258,7 +343,12 @@ export function StudioHero() {
 
               {/* idle / preview / audio portrait */}
               {!videoLive && (
-                <PortraitStage persona={persona} speaking={speaking} status={isLive ? live.status : mode} />
+                <PortraitStage
+                  persona={persona}
+                  speaking={speaking}
+                  status={isLive ? live.status : mode}
+                  portraitUrl={portraits[persona] ?? p.portraitImage}
+                />
               )}
 
               {/* top status bar */}
@@ -467,10 +557,12 @@ function PortraitStage({
   persona,
   speaking,
   status,
+  portraitUrl,
 }: {
   persona: PersonaId;
   speaking: boolean;
   status: string;
+  portraitUrl?: string;
 }) {
   const p = PERSONAS[persona];
   const initials = p.name
@@ -482,6 +574,66 @@ function PortraitStage({
     status === "connecting" ||
     status === "minting-token" ||
     status === "requesting-media";
+  const Equalizer = () => (
+    <div className="flex items-end gap-1" aria-label="speaking">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className="w-1.5 rounded-full bg-white/90"
+          style={{
+            height: 8 + (i % 2 === 0 ? 14 : 22),
+            animation: `ax-eq 0.7s ease-in-out ${i * 0.09}s infinite alternate`,
+          }}
+        />
+      ))}
+    </div>
+  );
+
+  if (portraitUrl) {
+    return (
+      <div className="absolute inset-0 bg-[#0b1620]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={portraitUrl}
+          alt={p.name}
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ objectPosition: "50% 22%" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
+        {connecting && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+            <span className="rounded-full bg-black/60 px-4 py-2 text-[13px] font-semibold text-white backdrop-blur">
+              Connecting…
+            </span>
+          </div>
+        )}
+        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-4">
+          <div className="drop-shadow">
+            <p className="text-[16px] font-bold text-white">{p.name}</p>
+            <p className="text-[12.5px] text-white/85">{p.role}</p>
+          </div>
+          {speaking ? (
+            <Equalizer />
+          ) : (
+            <span className="rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white/80 backdrop-blur">
+              Ready
+            </span>
+          )}
+        </div>
+        <style jsx>{`
+          @keyframes ax-eq {
+            from {
+              transform: scaleY(0.4);
+            }
+            to {
+              transform: scaleY(1.3);
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div
       className="absolute inset-0 flex flex-col items-center justify-center"
@@ -507,17 +659,8 @@ function PortraitStage({
       <p className="text-[12.5px] text-white/60">{p.role}</p>
 
       {speaking ? (
-        <div className="mt-4 flex items-end gap-1" aria-label="speaking">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <span
-              key={i}
-              className="w-1.5 rounded-full bg-white/80"
-              style={{
-                height: 8 + (i % 2 === 0 ? 14 : 22),
-                animation: `ax-eq 0.7s ease-in-out ${i * 0.09}s infinite alternate`,
-              }}
-            />
-          ))}
+        <div className="mt-4">
+          <Equalizer />
         </div>
       ) : (
         <p className="mt-4 text-[12px] text-white/50">

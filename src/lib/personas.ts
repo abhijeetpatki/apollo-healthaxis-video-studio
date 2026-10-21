@@ -37,6 +37,8 @@ export interface Persona {
   suggestions: string[];
   /** Portrait gradient stops for the idle / fallback avatar. */
   portrait: { from: string; to: string };
+  /** Optional baked-in photo shown on the idle / connecting / preview screen. */
+  portraitImage?: string;
 }
 
 const SAFETY_FOOTER = `
@@ -80,6 +82,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       `Triage mood and screen softly for risk. Summarise a short, practical plan at the end and mention that a CBT summary can be logged to their record and a follow-up sent on WhatsApp.` +
       SAFETY_FOOTER,
     portrait: { from: "#1d6882", to: "#154e62" },
+    portraitImage: "/avatars/doctor-male.png",
   },
   dietician: {
     id: "dietician",
@@ -112,6 +115,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       `When you read a label or reading aloud, state the key numbers you see so the patient can confirm. End with a short plan and mention a structured diet chart can be generated and sent on WhatsApp.` +
       SAFETY_FOOTER,
     portrait: { from: "#d97706", to: "#b45309" },
+    portraitImage: "/avatars/dietician-female.png",
   },
   physiotherapist: {
     id: "physiotherapist",

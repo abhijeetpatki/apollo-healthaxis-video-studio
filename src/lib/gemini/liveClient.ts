@@ -40,6 +40,9 @@ export interface LiveClientConfig {
   responseModality: "VIDEO" | "AUDIO";
   voiceName: string;
   avatarName?: string;
+  /** base64 reference portrait → customizedAvatar (needs allowlisting). */
+  customImageData?: string;
+  customImageMime?: string;
   systemInstruction: string;
   kickoff: string;
 }
@@ -105,8 +108,17 @@ export class LiveClient {
       inputAudioTranscription: {},
       outputAudioTranscription: {},
     };
-    if (this.cfg.responseModality === "VIDEO" && this.cfg.avatarName) {
-      setup.avatarConfig = { avatarName: this.cfg.avatarName };
+    if (this.cfg.responseModality === "VIDEO") {
+      if (this.cfg.customImageData) {
+        setup.avatarConfig = {
+          customizedAvatar: {
+            imageMimeType: this.cfg.customImageMime || "png",
+            imageData: this.cfg.customImageData,
+          },
+        };
+      } else if (this.cfg.avatarName) {
+        setup.avatarConfig = { avatarName: this.cfg.avatarName };
+      }
     }
     this.send({ setup });
   }

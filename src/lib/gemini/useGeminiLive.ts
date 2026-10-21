@@ -54,6 +54,8 @@ export interface StartParams {
   preferMode?: ConnectionMode;
   /** Server-held credentials may only be used by a signed-in admin. */
   allowServerCreds?: boolean;
+  /** Optional reference portrait for a custom avatar (needs allowlisting). */
+  customImage?: { data: string; mimeType: string };
 }
 
 let idCounter = 0;
@@ -291,6 +293,10 @@ export function useGeminiLive(avatarVideoRef: React.RefObject<HTMLVideoElement |
           responseModality: chosen === "vertex-video" ? "VIDEO" : "AUDIO",
           voiceName: p.voiceName,
           avatarName: chosen === "vertex-video" ? p.avatarName : undefined,
+          customImageData:
+            chosen === "vertex-video" ? p.customImage?.data : undefined,
+          customImageMime:
+            chosen === "vertex-video" ? p.customImage?.mimeType : undefined,
           systemInstruction: persona.systemInstruction,
           kickoff:
             "The consultation is starting and the patient's camera and microphone are now live. Greet the patient warmly by introducing yourself, then begin.",
